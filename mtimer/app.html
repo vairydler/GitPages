@@ -26,9 +26,53 @@
         };
     }
 
+	const timeformat=
+	function(time)
+	{
+		timedata = [ 
+			{ unit:1000, digit:3, headjoint:".", },/* ms   */
+			{ unit:60,   digit:2, headjoint:":", },/* sec  */
+			{ unit:60,   digit:2, headjoint:":", },/* min  */
+			{ unit:60,   digit:2, headjoint:"",  },/* hour */
+		];
+
+		return timedata.reduce( (a,e)=>{
+			let calc;
+
+			calc = (time % e.unit);
+			time = Math.floor( time / e.unit);
+
+			return e.headjoint + String( calc ).padStart( e.digit, '0' ) + a;
+		},"");
+	};
+
+	const getQuery=
+	function()
+	{
+		let ret = {
+			format:"",
+		};
+		
+		// 1. 現在のURLのクエリパラメータをすべて取得
+		const urlParams = new URLSearchParams(window.location.search);
+
+		// 2. パラメータの値をキーで取得する
+		Object.keys( ret ).forEach( (e,i,a)=>{
+			ret[ e ] = urlParams.get( e );
+		});
+
+		return ret;
+	};
+
+	const formatertable={
+		"0" : (time)=>time,
+		"1" : timeformat
+	};
+
 	const main=
 	function(){
 	    let workerManagers = [];
+	    let queryParam = getQuery();
 
 	    // ページを閉じる際に全てのWorkerを終了させる
 	    window.addEventListener('beforeunload', () => {
@@ -45,7 +89,7 @@
 	    // 生成されたWorkerインスタンスにonmessageハンドラを設定
 		let body = document.body;
 	    workerManagers[0].worker.onmessage = function(e) {
-			body.innerHTML = e.data;
+			body.innerHTML = formatertable[ queryParam.format ]( e.data );
 	    };
 	    workerManagers[0].worker.postMessage('start');
     };
